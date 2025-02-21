@@ -24,7 +24,7 @@ async function run() {
     await client.connect();
     const document = client.db("jobTaskDB");
     const userCollection = document.collection("users");
-
+    const tasksCollection = document.collection("tasks");
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -36,17 +36,52 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/users',async(req,res) => {
-                    const result = await userCollection.find().toArray()
-                    res.send(result)
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.get("/tasks", async (req, res) => {
+      const result = await tasksCollection.find().toArray();
+      res.send(result);
+    });
+    app.post("/tasks", async (req, res) => {
+      const list = req.body;
+      const result = await tasksCollection.insertOne(list);
+      res.send(result);
+    });
+
+    app.delete("/tasks/:id",async(req,res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await tasksCollection.deleteOne(query)
+      res.send(result)
     })
 
-    app.get('/users/:email',async(req,res) => {
-                    const email = req.params.email;
-                    const query = {email: email}
-                    const result = await userCollection.findOne(query)
-                    res.send(result)
+    app.patch("/tasks/:id",async(req,res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const task = req.body;      
+      const update = {
+        $set:  {title: task.title,
+          description: task.description
+        }
+      }
+      const result = await tasksCollection.updateOne(query,update)
+      res.send(result)
+      
     })
+    app.put("/tasks/:id", async (req, res) => {
+      const query = req.params.id;
+      console.log(query);
+    });
     //     Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
