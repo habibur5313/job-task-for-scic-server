@@ -21,10 +21,11 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const document = client.db("jobTaskDB");
     const userCollection = document.collection("users");
     const tasksCollection = document.collection("tasks");
+
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -49,9 +50,18 @@ async function run() {
     });
 
     app.get("/tasks", async (req, res) => {
-      const result = await tasksCollection.find().toArray();
-      res.send(result);
+      const total = await tasksCollection.estimatedDocumentCount();
+      res.send({ total });
+      // console.log(total);
     });
+
+    app.get("/tasks/:email",async(req,res) => {
+      const email = req.params.email;
+      const query = {email: email}
+      const result = await tasksCollection.find(query).toArray()
+      res.send(result)
+    })
+
     app.post("/tasks", async (req, res) => {
       const list = req.body;
       const result = await tasksCollection.insertOne(list);
@@ -78,15 +88,25 @@ async function run() {
       res.send(result)
       
     })
-    app.put("/tasks/:id", async (req, res) => {
-      const query = req.params.id;
-      console.log(query);
+
+    app.patch("/taskList", async (req, res) => {
+     const taskId = req.query.taskId;
+     const newStatus = req.query.newStatus;
+     console.log(taskId,newStatus);
+     const query = {id: parseInt(taskId)}
+     const update = {
+      $set: {
+        status: newStatus,
+      }
+     }
+     const result = await tasksCollection.updateOne(query,update)
+     res.send(result)   
     });
     //     Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     //     await client.close();
